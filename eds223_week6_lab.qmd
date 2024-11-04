@@ -1,0 +1,80 @@
+---
+title: "eds223_week6_lecture"
+author: "Amanda G. Overbye"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(sf) # vector handling
+library(terra) # raster handling
+library(tidyverse)
+library(tmap) # map making
+library(spData) # spatial data
+library(spDataLarge) # spatial data
+```
+
+```{r}
+# Give vector item and grid you want to rastorize to
+
+# load Zion park boundary (vector object to rasterize)
+boundary <- read_sf(system.file("vector/zion.gpkg", package = "spDataLarge")) 
+
+# load elevation raster to use as template raster object
+elevation <- rast(system.file("raster/srtm.tif", package = "spDataLarge"))
+
+# check and transform coordinate reference systems
+if(crs(elevation) == crs(boundary)) {
+  print("Coordinate reference systems match")
+} else{
+  warning("Updating coordinate reference systems to match")
+  # transform data to match
+  boundary <- st_transform(boundary, st_crs(elevation))
+}
+```
+
+```{r}
+# Check type of geometry
+
+if(sf::st_geometry_type(boundary) == "POLYGON") {
+  print("Its a polygon")
+  } else {
+    print("not a polygon")
+  }
+```
+
+```{r}
+park_polygon <- boundary 
+
+# Create line version of park boundary with multiline string
+# Basically just turns it into line data
+park_border <- boundary %>% 
+  sf::st_cast(., "MULTILINESTRING")
+
+```
+
+```{r}
+# Looking at it as a polygon
+tm_shape(park_polygon) +
+  tm_polygons()
+```
+
+```{r}
+# Looking at it as a boarder
+# You can use tm_polygons bc it is a boarder
+
+tm_shape(park_border) +
+  tm_lines()
+```
+
+```{r}
+# Rasterize
+# The second one is what we are rasterizing to
+# It only uses the geometries
+polygon_raster <- terra::rasterize(park_polygon, elevation)
+border_raster <- terra::rasterize(park_border, elevation)
+
+```
+
